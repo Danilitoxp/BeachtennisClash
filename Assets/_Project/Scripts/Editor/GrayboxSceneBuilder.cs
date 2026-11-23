@@ -300,7 +300,6 @@ namespace BeachTennis.EditorTools
         /// </summary>
         private static Presentation.Players.PlayerView BuildPlayerRig(string name, Material bodyMat)
         {
-            var racketMat = GetMaterial("Racket", new Color(0.15f, 0.15f, 0.18f), 0.5f);
             var playerRoot = new GameObject(name).transform;
             var bodyPivot = new GameObject("BodyPivot").transform;
             bodyPivot.SetParent(playerRoot, false);
@@ -308,13 +307,12 @@ namespace BeachTennis.EditorTools
             capsule.transform.localPosition = new Vector3(0f, 0.9f, 0f);
             capsule.transform.localScale = new Vector3(0.5f, 0.9f, 0.5f);
             GameObjectUtility.SetStaticEditorFlags(capsule, 0);
+            XBotSetup.Attach(bodyPivot, bodyMat);
+            if (bodyPivot.Find("XBot") != null) capsule.SetActive(false);
             var racketPivot = new GameObject("RacketPivot").transform;
             racketPivot.SetParent(bodyPivot, false);
             racketPivot.localPosition = new Vector3(0.3f, 1.1f, 0f);
-            var racket = Primitive(PrimitiveType.Cube, "Racket", racketPivot, racketMat);
-            racket.transform.localPosition = new Vector3(0.32f, 0f, 0f);
-            racket.transform.localScale = new Vector3(0.5f, 0.28f, 0.03f);
-            GameObjectUtility.SetStaticEditorFlags(racket, 0);
+            PaddleSetup.Attach(racketPivot);
             var view = playerRoot.gameObject.AddComponent<Presentation.Players.PlayerView>();
             var so = new SerializedObject(view);
             so.FindProperty("body").objectReferenceValue = bodyPivot;
@@ -352,3 +350,6 @@ namespace BeachTennis.EditorTools
         }
     }
 }
+
+
+

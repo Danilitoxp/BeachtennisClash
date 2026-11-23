@@ -5,6 +5,7 @@
         "BeachTennis.Core",
         "BeachTennis.Simulation",
         "BeachTennis.AI",
+        "BeachTennis.Presentation",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

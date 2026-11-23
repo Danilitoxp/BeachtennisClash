@@ -196,7 +196,7 @@ namespace BeachTennis.Game.Match
                 playerViews[v].gameObject.SetActive(used);
                 if (used)
                 {
-                    playerViews[v].Bind(_players[simIndex], _runner.Clock);
+                    playerViews[v].Bind(_players[simIndex], _runner.Clock, _ball);
                     playerViews[v].ShowGuides = simIndex == Human; // stand/aim rings only for the human
                 }
             }
@@ -329,6 +329,7 @@ namespace BeachTennis.Game.Match
                 {
                     ref readonly PlayerEvent e = ref events[i];
                     if (e.Type == PlayerEventType.SwingStarted) ViewFor(k)?.PlaySwing(false);
+                    if (e.Type == PlayerEventType.Hit) ViewFor(k)?.PlayContact(e);
                     if (k == Human && e.Type == PlayerEventType.Hit) ShowFeedback(GradeText(e), GradeColor(e.Grade));
                 }
                 events.Clear();
@@ -626,3 +627,5 @@ namespace BeachTennis.Game.Match
         }
     }
 }
+
+

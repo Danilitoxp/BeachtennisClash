@@ -98,7 +98,7 @@ namespace BeachTennis.Game.Training
             _runner.Scheduler.Register(_player);
 
             ballView.Bind(_ball, _runner.Clock);
-            playerView.Bind(_player, _runner.Clock);
+            playerView.Bind(_player, _runner.Clock, _ball);
             BuildUi();
             _nextRallyTimer = 1f;
             UpdatePanel();
@@ -265,6 +265,7 @@ namespace BeachTennis.Game.Training
                         playerView.PlaySwing(IsBackhand());
                         break;
                     case PlayerEventType.Hit:
+                        playerView.PlayContact(e);
                         _lastHitter = Hitter.Player;
                         _hits++;
                         if (e.Grade == TimingGrade.Perfect) _perfects++;
@@ -430,3 +431,5 @@ namespace BeachTennis.Game.Training
         }
     }
 }
+
+

@@ -151,6 +151,18 @@ Tática: smash na bola alta; lob quando os adversários estão na rede; curtinha
 **Em aberto:** rallies Profissional × Profissional são longos (~30 golpes). Contra humanos isso deve mudar; recalibrar depois do teste. Os textos de placar e anúncios alocam ~300 B por ponto; vira texto em cache na UI da Fase 6.
 
 ## Fase 5 — Personagens e animação (L)
+
+**Em andamento — primeira integração com X Bot:**
+- FBX do usuário importado como Humanoid válido, altura visual de 1,80 m, cores por time; aplicado em Match, Training e Sandbox.
+- O arquivo fornecido contém apenas uma pose de ~0,033 s. Ainda não há mocap de locomoção ou de golpes.
+- Base procedural provisória: ciclo das pernas proporcional à velocidade, preparação e variantes de forehand, backhand, lob, curta, smash e saque. Root motion permanece desligado; a simulação controla a posição.
+- Raquete vinculada à mão direita; IK analítico de braços/pernas, com limites anatômicos. O evento real de Hit informa o ponto de contato. Golpes fora do alcance visual não esticam o esqueleto.
+- Conferência pelo Unity CLI: rig inicializado e captura em Screenshots/Phase5-pose.png. Os critérios abaixo continuam pendentes; uma captura não valida contato em 95% dos golpes, foot sliding ou custo completo em celular.
+- Sincronização antecipada implementada: preparação de saque/smash pelo plano atual; tempo visual acompanha o relógio interpolado da simulação; IK converge antes do Hit e solta gradualmente no follow-through. Planos cancelados deixam de atrair a raquete, e a pausa congela a pose. 99 testes EditMode aprovados (10 novos de seleção, tempo do contato, cancelamento e avatar em 30/60/120 FPS); isso não substitui a avaliação de 95% das rebatidas em partidas reais.
+- Equipamento atual: somente o FBX Meshy_AI_Arion_Sunset_Paddle_20261123_generate.fbx indicado pelo usuário, em Art/Equipment/ArionPaddle. As raquetes anteriores e seus materiais/texturas foram removidos do projeto. Modelo sem textura, material URP na cor original, comprimento de 50 cm, origem no cabo e centro de contato em +0,32 m X. Aplicado em Match e Training e preservado na reconstrução de cenas. Malha com 189.830 triângulos; otimização para celular ainda pendente.
+- Correção de postura/empunhadura: instâncias do X Bot agora têm transform local zerado sob o pivô do corpo. Um deslocamento indevido de ~4,3 m fazia o IK tentar alcançar uma origem distante e aparentar uma pose sentada. A raquete usa um apoio calibrado na palma (não no punho), orientação da mão alinhada ao cabo e dedos fechados. Conferência em Screenshots/Posture-fixed.png e Grip-fixed.png; testes cobrem as cenas salvas, pés após translação/rotação e encaixe estável durante a rebatida.
+- Olhar e LOD procedural: cabeça/pescoço acompanham a bola em voo com limites de 65° na horizontal e 30° na vertical, suavização pelo tempo simulado e retorno ao centro quando a bola fica inativa ou atrás. Binding da bola integrado no treino e nas partidas. Animação distante usa cadência de 30/15 Hz conforme distância/qualidade; preparação, contato, golpes e recuperação ignoram a redução. Posição da raiz, física e regras seguem em sua frequência original. Isto reduz atualizações da pose; não reduz triângulos nem substitui medição de skinning no celular.
+- Próximas entregas: clipes de esportes/mocap, Blend Tree, reações e otimização de malhas/skinning em aparelho. A implementação procedural é uma base de integração, não a conclusão desta fase.
 - Rig humanoide, importação de mocap, Blend Tree de locomoção, set de golpes com evento de contato.
 - `ShotAnimationSelector` + time-warp de contato + IK de braço/raquete e olhar (Animation Rigging).
 - Transições suaves, recuperação de posição, reações (comemoração, frustração).
@@ -203,3 +215,10 @@ Tática: smash na bola alta; lob quando os adversários estão na rede; curtinha
 
 ### Marco de MVP jogável
 Fases 0–4 com gray-box = **jogo completo jogável com cápsulas**. É o ponto ideal para decidir investimento em arte/mocap com base em diversão comprovada, não em suposição.
+
+
+
+
+
+
+
