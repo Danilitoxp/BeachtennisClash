@@ -201,6 +201,8 @@ Tática: smash na bola alta; lob quando os adversários estão na rede; curtinha
 - Iluminação baked + APV, reflection probes, ciclo de horários pré-definidos (manhã, pôr do sol, noite com holofotes).
 - VFX: impacto da bola, areia, mergulho, smash. Pós-processamento por tier.
 - Personagens finais (pele, cabelo, roupas) com LODs.
+- **7b — Retrato (23/11/2026, feito):** orientação só retrato; UI de referência 1080×1920 escalada pela largura (uGUI e UI Toolkit); câmera por cima do ombro em retrato (altura 6 m, 5,5 m atrás do jogador, FOV vertical 66°), com o enquadramento antigo mantido para paisagem; joystick só nos 65% de baixo da metade esquerda; botões em arco à direita; HUD de performance abaixo do placar. Validado no BlueStacks a 60 FPS.
+- Próximos (referência visual aprovada): rede com malha, fita laranja e postes azuis acolchoados; arena com marcas e torcida; cartões de jogador no HUD; power-ups (regras a definir).
 
 **Validação:**
 - [ ] Orçamentos do doc 01 §4.1 cumpridos em cada tier, em aparelho, após 20 min.

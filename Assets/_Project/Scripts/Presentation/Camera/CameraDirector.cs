@@ -39,6 +39,15 @@ namespace BeachTennis.Presentation.Cameras
         [SerializeField] private float fieldOfView = 55f;
         [SerializeField] private float blendSeconds = 0.6f;
 
+        [Header("Portrait framing (over the shoulder)")]
+        [SerializeField] private float portraitHeight = 6.0f;
+        [Tooltip("Distance behind the human (follows their depth fully).")]
+        [SerializeField] private float portraitBack = 5.5f;
+        [SerializeField] private float portraitLateralFollow = 0.75f;
+        [Tooltip("Look target distance past the net, on the opponents' half.")]
+        [SerializeField] private float portraitLookAhead = 2.5f;
+        [SerializeField] private float portraitFieldOfView = 66f;
+
         private CinemachineCamera _gameplay, _serve, _closeUp;
         private Transform _rig, _focus, _serveRig, _serveFocus, _closeRig, _closeFocus;
         private PlayerSystem _human;
@@ -129,13 +138,28 @@ namespace BeachTennis.Presentation.Cameras
             int side = s.Side;
             float forward = -side; // towards the net from the human's half
 
-            // Gameplay: behind the human's baseline.
-            float x = Mathf.Clamp(p.x * lateralFollow, -_court.HalfWidth * 0.6f, _court.HalfWidth * 0.6f);
-            float towardsNet = (side * _court.HalfLength * 0.6f - p.z) * forward; // >0 when ahead of the usual spot
-            float z = side * (_court.HalfLength + back) + forward * Mathf.Max(0f, towardsNet) * depthFollow;
-            _rig.position = new Vector3(x, height, z);
+            bool portrait = UnityEngine.Screen.height > UnityEngine.Screen.width;
+            _gameplay.Lens.FieldOfView = portrait ? portraitFieldOfView : fieldOfView;
 
-            Vector3 look = new Vector3(x * 0.6f, 0.6f, forward * lookAhead);
+            float x;
+            Vector3 look;
+            if (portrait)
+            {
+                // Over the shoulder: close behind the human, the far court filling the tall screen.
+                x = Mathf.Clamp(p.x * portraitLateralFollow, -_court.HalfWidth * 0.8f, _court.HalfWidth * 0.8f);
+                float z = p.z + side * portraitBack;
+                _rig.position = new Vector3(x, portraitHeight, z);
+                look = new Vector3(x * 0.4f, 0.5f, forward * portraitLookAhead);
+            }
+            else
+            {
+                // Landscape: behind the human's baseline.
+                x = Mathf.Clamp(p.x * lateralFollow, -_court.HalfWidth * 0.6f, _court.HalfWidth * 0.6f);
+                float towardsNet = (side * _court.HalfLength * 0.6f - p.z) * forward; // >0 when ahead of the usual spot
+                float z = side * (_court.HalfLength + back) + forward * Mathf.Max(0f, towardsNet) * depthFollow;
+                _rig.position = new Vector3(x, height, z);
+                look = new Vector3(x * 0.6f, 0.6f, forward * lookAhead);
+            }
             if (_ball != null && _ball.State.Mode == BallMode.Flight)
             {
                 Vector3 b = Vec3.Lerp(_ball.PreviousState.Position, _ball.State.Position, alpha).ToUnity();
@@ -145,6 +169,8 @@ namespace BeachTennis.Presentation.Cameras
             _focus.position = look;
 
             // Serve: lower and closer behind the server, looking at the receivers.
+            _serve.Lens.FieldOfView = _gameplay.Lens.FieldOfView;
+            _closeUp.Lens.FieldOfView = portrait ? 55f : fieldOfView;
             _serveRig.position = new Vector3(p.x * 0.6f, 3.8f, p.z + side * 4.5f);
             _serveFocus.position = new Vector3(p.x * 0.3f, 1.0f, forward * 4f);
 

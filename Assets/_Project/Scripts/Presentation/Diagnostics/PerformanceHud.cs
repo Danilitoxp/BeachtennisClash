@@ -278,8 +278,7 @@ namespace BeachTennis.Presentation.Diagnostics
 
             var scaler = _canvasGo.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920, 1080);
-            scaler.matchWidthOrHeight = 1f;
+            UiBuilder.ConfigureScaler(scaler);
 
             // Safe-area container so notches/cutouts never cover the readout.
             var safe = new GameObject("SafeArea", typeof(RectTransform)).GetComponent<RectTransform>();
@@ -293,7 +292,7 @@ namespace BeachTennis.Presentation.Diagnostics
             var panelRt = panel.GetComponent<RectTransform>();
             panelRt.SetParent(safe, false);
             panelRt.anchorMin = panelRt.anchorMax = panelRt.pivot = new Vector2(0f, 1f);
-            panelRt.anchoredPosition = new Vector2(12f, -12f);
+            panelRt.anchoredPosition = new Vector2(12f, -150f); // below the scoreboard
             var bg = panel.GetComponent<Image>();
             bg.color = new Color(0f, 0f, 0f, 0.65f);
             bg.raycastTarget = false;
@@ -306,7 +305,7 @@ namespace BeachTennis.Presentation.Diagnostics
             var textGo = new GameObject("Text", typeof(RectTransform), typeof(Text));
             textGo.transform.SetParent(panelRt, false);
             _text = textGo.GetComponent<Text>();
-            _text.fontSize = 26;
+            _text.fontSize = 24;
             _text.font = UiFonts.Get(_text.fontSize);
             _text.color = Color.white;
             _text.raycastTarget = false;

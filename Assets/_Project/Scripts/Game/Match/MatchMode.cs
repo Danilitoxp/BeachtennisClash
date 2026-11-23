@@ -560,13 +560,13 @@ namespace BeachTennis.Game.Match
             var cam = Camera.main;
             Vector3 head = _players[_callPlayer].State.Position.ToUnity() + Vector3.up * 2.3f;
             Vector3 screen = cam.WorldToScreenPoint(head);
-            float scale = UnityEngine.Screen.height / UiBuilder.RefHeight;
+            float scale = UiBuilder.Scale;
             _callRect.anchoredPosition = new Vector2(screen.x / scale, screen.y / scale);
         }
 
         private void ShowBanner(string text, float seconds)
         {
-            _bannerText.text = text;
+            _bannerText.text = text.Replace(" — ", "\n"); // portrait: two short lines (point events only)
             _bannerPanel.gameObject.SetActive(true);
             CancelInvoke(nameof(HideBanner));
             Invoke(nameof(HideBanner), seconds);
@@ -607,7 +607,7 @@ namespace BeachTennis.Game.Match
             // HUD: scoreboard (top centre), point banner, timing feedback.
             _hud = UiBuilder.Canvas("[MatchHUD]", 60);
             _scoreText = UiBuilder.Panel(_hud, new Vector2(0.5f, 1f), new Vector2(0f, -10f), 30, TextAnchor.UpperLeft, out _);
-            _bannerText = UiBuilder.Panel(_hud, new Vector2(0.5f, 0.62f), Vector2.zero, 44, TextAnchor.MiddleCenter, out _bannerPanel, 0.55f);
+            _bannerText = UiBuilder.Panel(_hud, new Vector2(0.5f, 0.62f), Vector2.zero, 40, TextAnchor.MiddleCenter, out _bannerPanel, 0.55f);
             _bannerPanel.gameObject.SetActive(false);
 
             var fb = new GameObject("Feedback", typeof(RectTransform)).GetComponent<RectTransform>();
@@ -634,7 +634,7 @@ namespace BeachTennis.Game.Match
             _pauseButton = UiBuilder.Button(_hud, "II", Vector2.zero, new Vector2(110f, 110f), 48);
             _pauseButton.anchorMin = _pauseButton.anchorMax = _pauseButton.pivot = new Vector2(1f, 1f);
             Rect sa = UnityEngine.Screen.safeArea;
-            float scale = UnityEngine.Screen.height / UiBuilder.RefHeight;
+            float scale = UiBuilder.Scale;
             _pauseButton.anchoredPosition = new Vector2(-20f - (UnityEngine.Screen.width - sa.xMax) / scale, -20f - (UnityEngine.Screen.height - sa.yMax) / scale);
 
             _pauseMenu = UiBuilder.Canvas("[PauseMenu]", 95);

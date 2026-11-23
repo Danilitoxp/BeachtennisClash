@@ -36,9 +36,9 @@ namespace BeachTennis.EditorTools
             }
             panel.themeStyleSheet = theme;
             panel.scaleMode = PanelScaleMode.ScaleWithScreenSize;
-            panel.referenceResolution = new Vector2Int(1920, 1080);
+            panel.referenceResolution = new Vector2Int(1080, 1920); // portrait
             panel.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
-            panel.match = 1f;
+            panel.match = 0f;                                         // scale by width
             panel.sortingOrder = 100;
             EditorUtility.SetDirty(panel);
             AssetDatabase.SaveAssets();

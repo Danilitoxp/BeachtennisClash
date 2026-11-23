@@ -304,8 +304,7 @@ namespace BeachTennis.Game.Sandbox
             canvas.sortingOrder = 100;
             var scaler = canvasGo.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920, 1080);
-            scaler.matchWidthOrHeight = 1f;
+            UiBuilder.ConfigureScaler(scaler);
 
             var panel = new GameObject("Panel", typeof(RectTransform), typeof(Image), typeof(ContentSizeFitter), typeof(VerticalLayoutGroup));
             var rt = panel.GetComponent<RectTransform>();

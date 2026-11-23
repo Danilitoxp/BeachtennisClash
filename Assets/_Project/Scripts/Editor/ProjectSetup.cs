@@ -26,11 +26,11 @@ namespace BeachTennis.EditorTools
             PlayerSettings.enableFrameTimingStats = true; // GPU time in the performance HUD
             PlayerSettings.gcIncremental = true;
 
-            // Landscape only
-            PlayerSettings.defaultInterfaceOrientation = UIOrientation.AutoRotation;
-            PlayerSettings.allowedAutorotateToLandscapeLeft = true;
-            PlayerSettings.allowedAutorotateToLandscapeRight = true;
-            PlayerSettings.allowedAutorotateToPortrait = false;
+            // Portrait only (art direction, 23/11/2026): court runs up the screen, camera over the shoulder.
+            PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
+            PlayerSettings.allowedAutorotateToLandscapeLeft = false;
+            PlayerSettings.allowedAutorotateToLandscapeRight = false;
+            PlayerSettings.allowedAutorotateToPortrait = true;
             PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
 
             ApplyAndroid();

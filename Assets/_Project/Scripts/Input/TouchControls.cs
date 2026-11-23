@@ -20,7 +20,6 @@ namespace BeachTennis.Input
     [DefaultExecutionOrder(-3000)] // read touches before anything turns them into commands this frame
     public sealed class TouchControls : MonoBehaviour
     {
-        private const float RefHeight = 1080f;
         private const float JoystickRadius = 120f;
         private const float KnobRadius = 55f;
         private const float DeadZone = 0.12f;
@@ -94,7 +93,7 @@ namespace BeachTennis.Input
 
         private void Update()
         {
-            float scale = Screen.height / RefHeight;
+            float scale = UiBuilder.Scale;
             Rect safe = Screen.safeArea;
 
             foreach (Touch t in Touch.activeTouches)
@@ -108,7 +107,8 @@ namespace BeachTennis.Input
                         {
                             if (_heldButton < 0) Press(b, t.touchId);
                         }
-                        else if (pos.x < Screen.width * 0.5f && _joyTouchId < 0)
+                        // Lower 65% of the left half: the top is the HUD and the court view.
+                        else if (pos.x < Screen.width * 0.5f && pos.y < Screen.height * 0.65f && _joyTouchId < 0)
                         {
                             _joyTouchId = t.touchId;
                             _joyOrigin = pos;
@@ -221,10 +221,7 @@ namespace BeachTennis.Input
             _canvas = canvasGo.AddComponent<Canvas>();
             _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             _canvas.sortingOrder = 50;
-            var scaler = canvasGo.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, RefHeight);
-            scaler.matchWidthOrHeight = 1f;
+            UiBuilder.ConfigureScaler(canvasGo.AddComponent<CanvasScaler>());
 
             // Joystick (positioned in screen-space canvas units from the bottom-left).
             _joyBase = Circle("JoystickBase", canvasGo.transform, JoystickRadius, new Color(1f, 1f, 1f, 0.15f), RuntimeSprites.SoftDisc);
@@ -235,9 +232,9 @@ namespace BeachTennis.Input
 
             _buttons = new[]
             {
-                new ButtonDef { Type = ShotType.Main, Label = "GOLPE", Center = new Vector2(240f, 240f), Radius = 110f },
-                new ButtonDef { Type = ShotType.Lob, Label = "LOB", Center = new Vector2(500f, 140f), Radius = 78f },
-                new ButtonDef { Type = ShotType.Drop, Label = "CURTA", Center = new Vector2(150f, 490f), Radius = 78f },
+                new ButtonDef { Type = ShotType.Main, Label = "GOLPE", Center = new Vector2(230f, 250f), Radius = 110f },
+                new ButtonDef { Type = ShotType.Lob, Label = "LOB", Center = new Vector2(130f, 480f), Radius = 78f },
+                new ButtonDef { Type = ShotType.Drop, Label = "CURTA", Center = new Vector2(340f, 500f), Radius = 78f },
             };
 
             // Buttons hang off a bottom-right container sized to the safe area.

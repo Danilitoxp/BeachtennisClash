@@ -395,8 +395,7 @@ namespace BeachTennis.Game.Training
             canvas.sortingOrder = 60;
             var scaler = canvasGo.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920, 1080);
-            scaler.matchWidthOrHeight = 1f;
+            UiBuilder.ConfigureScaler(scaler);
 
             var panel = new GameObject("Panel", typeof(RectTransform), typeof(Image), typeof(ContentSizeFitter), typeof(VerticalLayoutGroup));
             _panel = panel.GetComponent<RectTransform>();

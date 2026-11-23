@@ -6,7 +6,19 @@ namespace BeachTennis.Presentation
     /// <summary>Small helpers for the placeholder uGUI screens (replaced by UI Toolkit menus in Phase 6).</summary>
     public static class UiBuilder
     {
-        public const float RefHeight = 1080f;
+        /// <summary>Reference canvas: portrait 1080×1920, scaled by width (the constant short side).</summary>
+        public const float RefWidth = 1080f;
+        public const float RefHeight = 1920f;
+
+        /// <summary>Screen pixels per canvas unit.</summary>
+        public static float Scale => Screen.width / RefWidth;
+
+        public static void ConfigureScaler(CanvasScaler scaler)
+        {
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(RefWidth, RefHeight);
+            scaler.matchWidthOrHeight = 0f;
+        }
 
         public static RectTransform Canvas(string name, int sortingOrder)
         {
@@ -14,10 +26,7 @@ namespace BeachTennis.Presentation
             var canvas = go.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = sortingOrder;
-            var scaler = go.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, RefHeight);
-            scaler.matchWidthOrHeight = 1f;
+            ConfigureScaler(go.AddComponent<CanvasScaler>());
             return go.GetComponent<RectTransform>();
         }
 
