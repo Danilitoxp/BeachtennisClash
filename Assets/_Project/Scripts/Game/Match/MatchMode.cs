@@ -232,6 +232,7 @@ namespace BeachTennis.Game.Match
         private void PreparePoint()
         {
             PointSetup.Prepare(_score, _players, _ids, _referee);
+            foreach (var v in playerViews) if (v.gameObject.activeSelf) v.ResetAnimation();
             trajectory.Hide();
             PlaceCamera();
             controls.SetServeMode(_ids[Human].Equals(_score.Server));
@@ -368,7 +369,18 @@ namespace BeachTennis.Game.Match
             if (!_score.IsOver && _score.IsDecidingPoint) _sb.Append("\nPONTO DECISIVO");
 
             ShowBanner(_sb.ToString(), pointPause);
+            if (o.GameWon && winner >= 0) PlayReactions(winner);
             UpdateScoreboard();
+        }
+
+        /// <summary>Winners celebrate, losers lament (authored clips) at the end of each game.</summary>
+        private void PlayReactions(int winningTeam)
+        {
+            for (int v = 0; v < playerViews.Length; v++)
+            {
+                int sim = ViewToSimIndex(v, _score.PlayersPerTeam);
+                if (sim >= 0) playerViews[v].PlayReaction(_ids[sim].Team == winningTeam);
+            }
         }
 
         private static string ReasonText(PointReason r, bool ours) => r switch

@@ -25,7 +25,7 @@ MonoBehaviour:
     ReachHeightMax: 2.95
     SmashHeight: 2.25
     DiveExtraReach: 1
-    DiveRecovery: 0.9
+    DiveRecovery: 1.3
     SwingLead: 0.1
     PerfectWindow: 0.035
     GoodWindow: 0.085

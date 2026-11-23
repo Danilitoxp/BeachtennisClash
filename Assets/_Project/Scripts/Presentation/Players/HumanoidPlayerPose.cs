@@ -17,10 +17,14 @@ namespace BeachTennis.Presentation.Players
         }
     }
 
-    // Temporary procedural animation until authored sports clips are available.
+    // Two modes. Without an animator controller: fully procedural placeholder (rest pose + legs + shots).
+    // With a controller (Mixamo locomotion/dive/reactions): the Animator drives the body and this class
+    // only layers the shot arm IK, racket grip, off-hand and gaze on top, after the Animator runs.
     // Presentation only: never changes simulated root movement or ball contact.
     public sealed class HumanoidPlayerPose
     {
+        /// <summary>An Animator Controller drives the body; procedural work is limited to the layers on top.</summary>
+        public bool Animated { get; }
         readonly Transform root, hand, racket;
         readonly Quaternion handBasis;
         readonly Vector3 palmOffset;
@@ -88,7 +92,8 @@ namespace BeachTennis.Presentation.Players
             rightArm = new Limb(Bone(HumanBodyBones.RightUpperArm), Bone(HumanBodyBones.RightLowerArm), hand);
             Ready = hand != null && leftLeg.Valid && rightLeg.Valid && leftArm.Valid && rightArm.Valid;
             if (!Ready) return;
-            animator.enabled = false;
+            Animated = animator.runtimeAnimatorController != null;
+            animator.enabled = Animated; // procedural-only mode writes every bone itself
             if (racket != null)
             {
                 racket.SetParent(hand, true);
@@ -142,17 +147,27 @@ namespace BeachTennis.Presentation.Players
             tracking = true; confirmedContact = true;
         }
 
-        public void Update(in PlayerState state, bool preparing, float dt, double now = double.NaN)
+        /// <param name="fullBody">An authored full-body clip is playing (dive, get up, reaction): only keep the racket in the hand.</param>
+        public void Update(in PlayerState state, bool preparing, float dt, double now = double.NaN, bool fullBody = false)
         {
             if (!Ready) return;
-            for (int i = 0; i < bones.Length; i++)
-                if (bones[i] != null) bones[i].localRotation = rest[i];
-            float speed = Mathf.Sqrt(state.Velocity.x * state.Velocity.x + state.Velocity.z * state.Velocity.z);
-            stride += speed * dt * 5.5f;
-            float amount = Mathf.Clamp01(speed / 2f);
-            Vector3 direction = new Vector3(state.Velocity.x, 0, state.Velocity.z).normalized;
-            PoseLeg(leftLeg, -0.12f, stride, amount, direction);
-            PoseLeg(rightLeg, 0.12f, stride + Mathf.PI, amount, direction);
+            if (Animated && fullBody)
+            {
+                AttachRacketToHand();
+                lastTime = double.IsNaN(now) ? lastTime + dt : now;
+                return;
+            }
+            if (!Animated)
+            {
+                for (int i = 0; i < bones.Length; i++)
+                    if (bones[i] != null) bones[i].localRotation = rest[i];
+                float speed = Mathf.Sqrt(state.Velocity.x * state.Velocity.x + state.Velocity.z * state.Velocity.z);
+                stride += speed * dt * 5.5f;
+                float amount = Mathf.Clamp01(speed / 2f);
+                Vector3 direction = new Vector3(state.Velocity.x, 0, state.Velocity.z).normalized;
+                PoseLeg(leftLeg, -0.12f, stride, amount, direction);
+                PoseLeg(rightLeg, 0.12f, stride + Mathf.PI, amount, direction);
+            }
             now = double.IsNaN(now) ? lastTime + dt : now;
             lastTime = now;
             swing = tracking
@@ -184,7 +199,9 @@ namespace BeachTennis.Presentation.Players
                 for (int i = 0; i < gripFingers.Length; i++)
                     if (gripFingers[i] != null)
                         gripFingers[i].localRotation *= Quaternion.AngleAxis(i >= 12 ? 35f : (i % 3 == 1 ? 75f : 55f), fingerAxes[i]);
-            leftArm.Solve(root.TransformPoint(new Vector3(-0.35f, preparing ? 1.35f : 1.06f, 0.32f)), -root.right);
+            // With authored locomotion the off-hand keeps its running swing except while hitting.
+            if (!Animated || preparing || swing < 1f || contacting)
+                leftArm.Solve(root.TransformPoint(new Vector3(-0.35f, preparing ? 1.35f : 1.06f, 0.32f)), -root.right);
             if (racket != null)
             {
                 racket.position = hand.position + hand.rotation * palmOffset;
@@ -192,6 +209,15 @@ namespace BeachTennis.Presentation.Players
             }
             UpdateGaze(dt);
 
+        }
+
+        /// <summary>Keeps the racket in the palm, following whatever the clip does with the hand.</summary>
+        void AttachRacketToHand()
+        {
+            if (racket == null || hand == null) return;
+            // Inverse of the grip used in Update: hand = LookRotation(racket·down, racket·forward)·handBasis⁻¹.
+            racket.rotation = hand.rotation * handBasis * Quaternion.Euler(-90f, 0f, 0f);
+            racket.position = hand.position + hand.rotation * palmOffset;
         }
 
         void UpdateGaze(float dt)

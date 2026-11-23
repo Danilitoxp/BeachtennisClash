@@ -32,6 +32,18 @@ namespace BeachTennis.Presentation.Players
         private SpriteRenderer _standMarker;
         private SpriteRenderer _aimMarker;
 
+        // Authored animation (Animator Controller on the X Bot), when present.
+        private Animator _animator;
+        private bool _wasRecovering;
+        private bool _lastContactLeft;
+        private static readonly int ForwardId = Animator.StringToHash("Forward");
+        private static readonly int StrafeId = Animator.StringToHash("Strafe");
+        private static readonly int DiveId = Animator.StringToHash("Dive");
+        private static readonly int DiveMirrorId = Animator.StringToHash("DiveMirror");
+        private static readonly int VictoryId = Animator.StringToHash("Victory");
+        private static readonly int DisappointedId = Animator.StringToHash("Disappointed");
+        private static readonly int LocomotionId = Animator.StringToHash("Locomotion");
+
         private static readonly Color Reachable = new Color(0.25f, 1f, 0.35f, 0.9f);
         private static readonly Color DiveOnly = new Color(1f, 0.6f, 0.1f, 0.9f);
         private static readonly Color AimColor = new Color(1f, 1f, 1f, 0.85f);
@@ -49,11 +61,33 @@ namespace BeachTennis.Presentation.Players
             _pose?.Reset();
             _player = player;
             _clock = clock;
+            ResetAnimation();
+        }
+
+        private bool Animated => _pose != null && _pose.Ready && _pose.Animated && _animator != null;
+
+        /// <summary>Back to locomotion (new point, change of ends): cancels dives and reactions.</summary>
+        public void ResetAnimation()
+        {
+            _wasRecovering = false;
+            if (!Animated || !_animator.isActiveAndEnabled) return;
+            _animator.ResetTrigger(DiveId);
+            _animator.ResetTrigger(VictoryId);
+            _animator.ResetTrigger(DisappointedId);
+            _animator.Play(LocomotionId, 0, 0f);
+        }
+
+        /// <summary>End-of-game reaction (authored clip). No effect without an animator controller.</summary>
+        public void PlayReaction(bool victory)
+        {
+            if (!Animated || !_animator.isActiveAndEnabled) return;
+            _animator.SetTrigger(victory ? VictoryId : DisappointedId);
         }
 
         private void Awake()
         {
-            _pose = new HumanoidPlayerPose(transform, GetComponentInChildren<Animator>(true), racketPivot);
+            _animator = GetComponentInChildren<Animator>(true);
+            _pose = new HumanoidPlayerPose(transform, _animator, racketPivot);
             _standMarker = Marker("StandMarker", 0.7f);
             _aimMarker = Marker("AimMarker", 0.9f);
         }
@@ -89,6 +123,7 @@ namespace BeachTennis.Presentation.Players
         {
             _forcePose = true;
             bool backhand = transform.InverseTransformPoint(e.ContactPoint.ToUnity()).x < 0f;
+            _lastContactLeft = backhand;
             _pose?.Contact(e.ContactPoint.ToUnity(), ShotAnimationSelector.Select(e.Shot,
                 (_pose != null && _pose.CurrentShot == ShotAnimation.Serve) ||
                 (_player != null && _player.State.Phase == PlayerPhase.Serving), e.Smash, backhand),
@@ -117,9 +152,17 @@ namespace BeachTennis.Presentation.Players
             // Face the net.
             transform.rotation = Quaternion.LookRotation(new Vector3(0f, 0f, -s.Side));
 
-            // Dive: lean towards the side the player lunged to.
-            float lean = s.Phase == PlayerPhase.Recovering ? 70f : 0f;
-            body.localRotation = Quaternion.Slerp(body.localRotation, Quaternion.Euler(0f, 0f, -lean * _swingSign), 1f - Mathf.Exp(-20f * poseDelta));
+            bool fullBodyClip = false;
+            if (Animated)
+            {
+                fullBodyClip = DriveAnimator(s);
+            }
+            else
+            {
+                // Dive: lean towards the side the player lunged to.
+                float lean = s.Phase == PlayerPhase.Recovering ? 70f : 0f;
+                body.localRotation = Quaternion.Slerp(body.localRotation, Quaternion.Euler(0f, 0f, -lean * _swingSign), 1f - Mathf.Exp(-20f * poseDelta));
+            }
 
             if (_pose != null && _pose.Ready)
             {
@@ -135,12 +178,13 @@ namespace BeachTennis.Presentation.Players
                     lookTarget = Vec3.Lerp(_ball.PreviousState.Position, _ball.State.Position, alpha).ToUnity();
                 _pose.SetLookTarget(lookTarget);
                 float distanceSquared = _animationCamera != null ? (_animationCamera.position - transform.position).sqrMagnitude : 0f;
-                bool critical = _forcePose || _player.Command.ShotHeld || !double.IsNaN(s.SwingTime) ||
+                // With an Animator the body is rewritten every frame, so the layers on top must be too.
+                bool critical = Animated || _forcePose || _player.Command.ShotHeld || !double.IsNaN(s.SwingTime) ||
                     s.Phase == PlayerPhase.Recovering || _pose.ContactActive(visualTime);
                 if (AnimationLod.ShouldUpdate(visualTime, _lastPoseTime, distanceSquared, QualitySettings.GetQualityLevel(), critical))
                 {
                     float elapsed = _lastPoseTime < 0 ? 0f : (float)System.Math.Max(0, visualTime - _lastPoseTime);
-                    _pose.Update(s, _player.Command.ShotHeld, elapsed, visualTime);
+                    _pose.Update(s, _player.Command.ShotHeld, elapsed, visualTime, fullBodyClip);
                     _lastPoseTime = visualTime;
                     _forcePose = false;
                 }
@@ -149,6 +193,29 @@ namespace BeachTennis.Presentation.Players
             else AnimateRacket();
             _lastVisualTime = visualTime;
             UpdateMarkers(s);
+        }
+
+        /// <summary>
+        /// Feeds the authored animator from the simulation (local velocity in m/s, dive edge).
+        /// Returns true while a full-body clip (dive, get up, reaction) owns the pose.
+        /// </summary>
+        private bool DriveAnimator(in PlayerState s)
+        {
+            Vector3 local = transform.InverseTransformDirection(new Vector3(s.Velocity.x, 0f, s.Velocity.z));
+            _animator.SetFloat(ForwardId, local.z, 0.08f, Time.deltaTime);
+            _animator.SetFloat(StrafeId, local.x, 0.08f, Time.deltaTime);
+
+            bool recovering = s.Phase == PlayerPhase.Recovering;
+            if (recovering && !_wasRecovering)
+            {
+                _animator.SetBool(DiveMirrorId, _lastContactLeft);
+                _animator.SetTrigger(DiveId);
+            }
+            _wasRecovering = recovering;
+
+            AnimatorStateInfo state = _animator.GetCurrentAnimatorStateInfo(0);
+            bool inLocomotion = state.shortNameHash == LocomotionId && !_animator.IsInTransition(0);
+            return recovering || !inLocomotion;
         }
 
         private void AnimateRacket()

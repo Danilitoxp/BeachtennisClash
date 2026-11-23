@@ -49,7 +49,7 @@ namespace BeachTennis.Simulation.Players
             ReachHeightMax = 2.95f,
             SmashHeight = 2.25f,
             DiveExtraReach = 1.0f,
-            DiveRecovery = 0.9f,
+            DiveRecovery = 1.3f, // = dive (0.55 s) + get up (0.75 s) as animated
 
             SwingLead = 0.10f,
             PerfectWindow = 0.035f,
