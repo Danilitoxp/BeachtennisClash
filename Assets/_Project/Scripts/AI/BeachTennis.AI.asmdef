@@ -1,0 +1,17 @@
+{
+    "name": "BeachTennis.AI",
+    "rootNamespace": "BeachTennis.AI",
+    "references": [
+        "BeachTennis.Core",
+        "BeachTennis.Simulation"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

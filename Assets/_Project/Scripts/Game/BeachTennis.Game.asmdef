@@ -1,0 +1,22 @@
+{
+    "name": "BeachTennis.Game",
+    "rootNamespace": "BeachTennis.Game",
+    "references": [
+        "BeachTennis.Core",
+        "BeachTennis.Simulation",
+        "BeachTennis.Presentation",
+        "BeachTennis.Input",
+        "BeachTennis.AI",
+        "Unity.InputSystem",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

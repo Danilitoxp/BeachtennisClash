@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1045 &1
+EditorBuildSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Scenes:
+  - enabled: 1
+    path: Assets/_Project/Scenes/Boot.unity
+    guid: 1924051504aab9e40b5c531604b2f8db
+  - enabled: 1
+    path: Assets/_Project/Scenes/Match.unity
+    guid: d9807e848d4ae104d93ad9439355432e
+  - enabled: 1
+    path: Assets/_Project/Scenes/Training.unity
+    guid: 6e3fc79252f314a4498344798179fa56
+  - enabled: 1
+    path: Assets/_Project/Scenes/Sandbox_BallMachine.unity
+    guid: 0f2f8215ffac92747b1ec9b729183d78
+  m_configObjects:
+    com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  m_UseUCBPForAssetBundles: 0

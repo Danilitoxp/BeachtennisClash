@@ -1,0 +1,24 @@
+{
+    "name": "BeachTennis.Editor",
+    "rootNamespace": "BeachTennis.EditorTools",
+    "references": [
+        "BeachTennis.Core",
+        "BeachTennis.Simulation",
+        "BeachTennis.Game",
+        "BeachTennis.Presentation",
+        "BeachTennis.Input",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

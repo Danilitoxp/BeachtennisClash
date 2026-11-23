@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4a2ba145fbf3f641990569828eb005a, type: 3}
+  m_Name: Player
+  m_EditorClassIdentifier: BeachTennis.Game::BeachTennis.Game.Config.PlayerSettings
+  Config:
+    MaxSpeed: 5
+    Acceleration: 9
+    Braking: 14
+    SplitStepBoost: 1.35
+    SplitStepDuration: 0.3
+    SplitStepMaxSpeed: 1
+    ReachRadius: 1
+    IdealContactOffset: 0.6
+    ReachHeightMin: 0.25
+    ReachHeightMax: 2.95
+    SmashHeight: 2.25
+    DiveExtraReach: 1
+    DiveRecovery: 0.9
+    SwingLead: 0.1
+    PerfectWindow: 0.035
+    GoodWindow: 0.085
+    WhiffEarlyLimit: 0.45
+    HeldAtContactError: 0.12
+    SwingCooldown: 0.35
