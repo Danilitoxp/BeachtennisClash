@@ -92,6 +92,7 @@ namespace BeachTennis.Game.Training
             _runner = AppRoot.Instance.Simulation;
             _court = CourtDimensions.For(CourtFormat.Doubles);
             _rng = new DeterministicRandom(seed);
+            _showTrajectory = GameSettings.TrajectoryAid;
 
             _ball = new BallSystem(physics.Config, _court);
             _player = new PlayerSystem(_ball, playerSettings.Config, _court, -1, new Vec3(0f, 0f, -5.5f), seed ^ 0xABCDu);
@@ -186,7 +187,7 @@ namespace BeachTennis.Game.Training
             if (kb != null && kb.tKey.wasPressedThisFrame) _showTrajectory = !_showTrajectory;
         }
 
-        private bool _showTrajectory = true;
+        private bool _showTrajectory = true; // set from GameSettings in Start (PlayerPrefs is not allowed in field initializers)
 
         private void ToggleMode()
         {

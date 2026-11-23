@@ -183,8 +183,17 @@ Tática: smash na bola alta; lob quando os adversários estão na rede; curtinha
 - Menus básicos (UI Toolkit): jogar, modo, dificuldade, opções gráficas.
 
 **Validação:**
-- [ ] Bola sempre legível na câmera de jogo (teste em tela de 6").
-- [ ] HUD < 0,5 ms CPU; nenhum rebuild de Canvas por frame sem necessidade.
+- [ ] Bola sempre legível na câmera de jogo (teste em tela de 6"). *No BlueStacks a bola, o rastro e a linha de trajetória ficam legíveis com a câmera nova; falta um celular de 6".*
+- [ ] HUD < 0,5 ms CPU; nenhum rebuild de Canvas por frame sem necessidade. *Textos só mudam por ponto; medir em aparelho.*
+
+**Entregue (23/11/2026):**
+- `CameraDirector` (Cinemachine 3): câmera de jogo atrás da sua linha de fundo, que acompanha 35% do deslocamento lateral e avança quando você sobe à rede, com o foco puxado levemente para a bola; câmera de saque mais baixa e próxima; close no fim de cada game; **corte seco na troca de lado** (uma transição atravessaria a rede). Usada na partida e no treino.
+- Pausa: botão II, botão voltar do Android e **pausa automática ao sair do app**. Congela simulação e tempo; Continuar / Sair para o menu.
+- Menu em **UI Toolkit** (`MainMenuView`, `PanelSettings` em Resources/UI): Simples rápida, Duplas rápida, Simples oficial ITF, Treino, Opções.
+- Opções salvas (`GameSettings`, PlayerPrefs) e aplicadas na hora: dificuldade, linha da trajetória, qualidade gráfica (Baixa/Média/Alta/Ultra), 60/120 FPS (avisa quando a tela não suporta), categoria (Feminina/Mista: rede 1,70 m e zona de 3 m; Masculina: 1,80 m e 6 m).
+- Verificado no BlueStacks: toque no UI Toolkit, opções aplicadas na partida (rede 1,80 m na masculina), pausa e retomada.
+- **Decisão:** os textos de placar e anúncios continuam alocando ~450 B **por ponto**, não por frame. Com GC incremental isso não trava; não compensa a complexidade de texto sem alocação agora.
+- Pendente: tela de resultado e pausa ainda em uGUI (migrar para UI Toolkit junto com o visual da Fase 7); HUD de placar com visual final.
 
 ## Fase 7 — Produção visual (L, depende de arte)
 - Quadra de areia (shader, pegadas, marcas da bola), rede, linhas.

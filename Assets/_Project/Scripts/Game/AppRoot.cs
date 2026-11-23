@@ -29,6 +29,7 @@ namespace BeachTennis.Game
         private void Compose()
         {
             FrameRateController.LoadAndApply();
+            GameSettings.ApplyAll(); // saved quality level and 60/120 FPS choice
 
             Simulation = gameObject.AddComponent<SimulationRunner>();
             Simulation.Initialize(SimulationClock.DefaultTickRate);

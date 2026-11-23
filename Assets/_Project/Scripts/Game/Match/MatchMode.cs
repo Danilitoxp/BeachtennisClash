@@ -30,16 +30,6 @@ namespace BeachTennis.Game.Match
     {
         private enum Screen { Menu, Playing, Paused, Finished }
 
-        private struct MenuOption
-        {
-            public string Label;
-            public int PlayersPerTeam;
-            public bool Official;
-            public bool Training;
-            public bool DifficultySelector;
-            public bool AidToggle;
-            public RectTransform Rect;
-        }
 
         [SerializeField] private BallPhysicsSettings physics;
         [SerializeField] private PlayerSettings playerSettings;
@@ -53,7 +43,6 @@ namespace BeachTennis.Game.Match
         [Tooltip("Optional: created at runtime when left empty.")]
         [SerializeField] private CameraDirector cameraDirector;
         [SerializeField] private float pointPause = 2.2f;
-        [SerializeField] private EventCategory category = EventCategory.Women;
         [SerializeField] private string trainingScene = "Training";
 
         private const int Human = 0;
@@ -67,16 +56,12 @@ namespace BeachTennis.Game.Match
         private PlayerId[] _ids;
         private AiPlayer[] _bots;
         private TeamBrain[] _brains;
-        private Difficulty _difficulty = Difficulty.Medium;
         private readonly int[] _seenCalls = new int[2];
         private Text _callText;
         private RectTransform _callRect;
         private int _callPlayer = -1;
         private float _callTimer;
-        private Text _difficultyLabel;
-        private Text _aidLabel;
         /// <summary>Draw the path of balls coming to the human (readability aid, on by default).</summary>
-        private bool _showAid = true;
         private int _trajectoryVersion = -1;
         private MatchScore _score;
         private PointReferee _referee;
@@ -92,8 +77,7 @@ namespace BeachTennis.Game.Match
         private RectTransform _bannerPanel;
         private Text _feedbackText;
         private float _feedbackTimer;
-        private RectTransform _menu;
-        private MenuOption[] _options;
+        private MainMenuView _menuView;
         private RectTransform _result;
         private RectTransform _pauseButton;
         private RectTransform _pauseMenu;
@@ -107,6 +91,9 @@ namespace BeachTennis.Game.Match
             _runner = AppRoot.Instance.Simulation;
             if (cameraDirector == null) cameraDirector = new GameObject("CameraDirector").AddComponent<CameraDirector>();
             BuildUi();
+            _menuView = gameObject.AddComponent<MainMenuView>();
+            _menuView.PlayRequested += StartMatch;
+            _menuView.TrainingRequested += () => SceneManager.LoadScene(trainingScene);
             foreach (var v in playerViews) v.gameObject.SetActive(false);
             ShowMenu();
         }
@@ -137,6 +124,7 @@ namespace BeachTennis.Game.Match
         {
             TearDown();
 
+            EventCategory category = GameSettings.Category;
             _rules = official ? RuleSet.ItfOfficial(category) : RuleSet.QuickShortSet(category);
             _court = CourtDimensions.For(playersPerTeam == 1 ? CourtFormat.Singles : CourtFormat.Doubles);
             _court.NetHeight = _rules.NetHeight;
@@ -158,7 +146,7 @@ namespace BeachTennis.Game.Match
 
             // AI for everyone but the human. The partner plays at the chosen level too, so the human's
             // team is never handicapped by a weak partner on hard settings.
-            AiProfile profile = AiProfile.For(_difficulty);
+            AiProfile profile = AiProfile.For(GameSettings.Difficulty);
             for (int team = 0; team < 2; team++)
             {
                 var members = new PlayerSystem[playersPerTeam];
@@ -212,7 +200,7 @@ namespace BeachTennis.Game.Match
 
             _seenDecisions = 0;
             _screen = Screen.Playing;
-            _menu.gameObject.SetActive(false);
+            _menuView.Hide();
             _result.gameObject.SetActive(false);
             _hud.gameObject.SetActive(true);
             controls.gameObject.SetActive(true);
@@ -260,7 +248,7 @@ namespace BeachTennis.Game.Match
         {
             switch (_screen)
             {
-                case Screen.Menu: HandleMenuInput(); return;
+                case Screen.Menu: return; // the UI Toolkit menu raises events
                 case Screen.Finished: if (TappedAnywhere()) ShowMenu(); return;
                 case Screen.Paused: HandlePauseInput(); return;
             }
@@ -508,43 +496,11 @@ namespace BeachTennis.Game.Match
             Time.timeScale = 1f;
             TearDown();
             _screen = Screen.Menu;
-            _menu.gameObject.SetActive(true);
+            _menuView.Show();
             _result.gameObject.SetActive(false);
             _hud.gameObject.SetActive(false);
             controls.gameObject.SetActive(false);
             foreach (var v in playerViews) v.gameObject.SetActive(false);
-        }
-
-        private void HandleMenuInput()
-        {
-            int chosen = -1;
-            foreach (Touch t in Touch.activeTouches)
-            {
-                if (t.phase != TouchPhase.Ended) continue;
-                for (int i = 0; i < _options.Length; i++)
-                    if (RectTransformUtility.RectangleContainsScreenPoint(_options[i].Rect, t.screenPosition, null)) chosen = i;
-            }
-            var kb = UnityEngine.InputSystem.Keyboard.current;
-            if (kb != null)
-                for (int i = 0; i < _options.Length && i < 9; i++)
-                    if (kb[UnityEngine.InputSystem.Key.Digit1 + i].wasPressedThisFrame) chosen = i;
-            if (chosen < 0) return;
-
-            MenuOption o = _options[chosen];
-            if (o.DifficultySelector)
-            {
-                _difficulty = (Difficulty)(((int)_difficulty + 1) % 4);
-                _difficultyLabel.text = DifficultyText();
-                return;
-            }
-            if (o.AidToggle)
-            {
-                _showAid = !_showAid;
-                _aidLabel.text = AidText();
-                return;
-            }
-            if (o.Training) SceneManager.LoadScene(trainingScene);
-            else StartMatch(o.PlayersPerTeam, o.Official);
         }
 
         private static bool TappedAnywhere()
@@ -557,7 +513,6 @@ namespace BeachTennis.Game.Match
 
         // ------------------------------------------------------------------ UI
 
-        private string AidText() => "6  Linha da trajetória: " + (_showAid ? "LIGADA" : "DESLIGADA");
 
         /// <summary>Shows the predicted path of each ball heading to the human's half (when the aid is on).</summary>
         private void UpdateTrajectoryAid()
@@ -566,11 +521,10 @@ namespace BeachTennis.Game.Match
             _trajectoryVersion = _ball.LaunchVersion;
             ref readonly BallState b = ref _ball.State;
             bool towardsHuman = b.Mode == BallMode.Flight && b.Velocity.z * _players[Human].State.Side > 0f;
-            if (_showAid && towardsHuman) trajectory.Show(b, _ball.Config, _court, _runner.Clock.TickDeltaF);
+            if (GameSettings.TrajectoryAid && towardsHuman) trajectory.Show(b, _ball.Config, _court, _runner.Clock.TickDeltaF);
             else trajectory.Hide();
         }
 
-        private string DifficultyText() => "5  Dificuldade: " + AiProfile.For(_difficulty).Name + "  (tocar para trocar)";
 
         /// <summary>Shows the AI partner's "MINHA!" / "SUA!" above their head (human's team only).</summary>
         private void UpdateCallOut()
@@ -658,41 +612,6 @@ namespace BeachTennis.Game.Match
             _callText = UiBuilder.Panel(_hud, new Vector2(0f, 0f), Vector2.zero, 34, TextAnchor.MiddleCenter, out _callRect, 0.7f);
             _callRect.pivot = new Vector2(0.5f, 0f);
             _callRect.gameObject.SetActive(false);
-
-            // Menu.
-            _menu = UiBuilder.Canvas("[MatchMenu]", 80);
-            var bg = new GameObject("Bg", typeof(RectTransform), typeof(Image)).GetComponent<RectTransform>();
-            bg.SetParent(_menu, false);
-            bg.anchorMin = Vector2.zero;
-            bg.anchorMax = Vector2.one;
-            bg.offsetMin = bg.offsetMax = Vector2.zero;
-            bg.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.55f);
-            bg.GetComponent<Image>().raycastTarget = false;
-            var title = UiBuilder.Text(_menu, 64, TextAnchor.MiddleCenter);
-            title.rectTransform.anchorMin = title.rectTransform.anchorMax = new Vector2(0.5f, 0.85f);
-            title.rectTransform.sizeDelta = new Vector2(1200f, 100f);
-            title.text = "BEACH TENNIS 3D";
-
-            _options = new[]
-            {
-                new MenuOption { Label = "1  Simples · Rápida (1 set curto)", PlayersPerTeam = 1 },
-                new MenuOption { Label = "2  Duplas · Rápida (1 set curto)", PlayersPerTeam = 2 },
-                new MenuOption { Label = "3  Simples · Oficial ITF (melhor de 3)", PlayersPerTeam = 1, Official = true },
-                new MenuOption { Label = "4  Treino", Training = true },
-                new MenuOption { Label = "", DifficultySelector = true },
-                new MenuOption { Label = "", AidToggle = true },
-            };
-            for (int i = 0; i < _options.Length; i++)
-                _options[i].Rect = UiBuilder.Button(_menu, _options[i].Label, new Vector2(0f, 270f - i * 112f), new Vector2(900f, 92f), 34);
-            _difficultyLabel = _options[_options.Length - 2].Rect.GetComponentInChildren<Text>();
-            _difficultyLabel.text = DifficultyText();
-            _aidLabel = _options[_options.Length - 1].Rect.GetComponentInChildren<Text>();
-            _aidLabel.text = AidText();
-
-            var note = UiBuilder.Text(_menu, 26, TextAnchor.MiddleCenter);
-            note.rectTransform.anchorMin = note.rectTransform.anchorMax = new Vector2(0.5f, 0.08f);
-            note.rectTransform.sizeDelta = new Vector2(1600f, 60f);
-            note.text = "Regras ITF 2026 · categoria feminina/mista (rede 1,70 m, zona proibida 3 m) · em duplas o parceiro é IA do mesmo nível";
 
             // Result.
             _result = UiBuilder.Canvas("[MatchResult]", 90);
