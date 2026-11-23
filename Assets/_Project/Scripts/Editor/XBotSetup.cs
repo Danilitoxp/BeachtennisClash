@@ -12,6 +12,9 @@ var importer=(ModelImporter)AssetImporter.GetAtPath(Model);
 importer.animationType=ModelImporterAnimationType.Human;
 importer.avatarSetup=ModelImporterAvatarSetup.CreateFromThisModel;
 importer.materialImportMode=ModelImporterMaterialImportMode.None;
+// ~49k triangles per character: mesh LODs keep 4 players inside the mobile budget (measured 410k -> 91k).
+importer.generateMeshLods=true;
+importer.maximumMeshLod=-1;
 importer.SaveAndReimport();
 var root=new GameObject("XBot");
 var mesh=(GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(Model));

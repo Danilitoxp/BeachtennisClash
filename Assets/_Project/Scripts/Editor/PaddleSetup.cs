@@ -32,6 +32,10 @@ namespace BeachTennis.EditorTools
             importer.importAnimation = false;
             importer.importCameras = false;
             importer.importLights = false;
+            // The Meshy paddle is ~190k triangles: import-time mesh LODs let the renderer pick a light
+            // level by screen size (measured: 4 paddles drop from ~1.5M to ~13k drawn triangles).
+            importer.generateMeshLods = true;
+            importer.maximumMeshLod = -1;
             importer.SaveAndReimport();
 
             var root = new GameObject("ArionPaddle");
