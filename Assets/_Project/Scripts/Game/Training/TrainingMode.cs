@@ -4,6 +4,7 @@ using BeachTennis.Game.Config;
 using BeachTennis.Input;
 using BeachTennis.Presentation;
 using BeachTennis.Presentation.Ball;
+using BeachTennis.Presentation.Cameras;
 using BeachTennis.Presentation.Players;
 using BeachTennis.Simulation;
 using BeachTennis.Simulation.Ball;
@@ -98,6 +99,8 @@ namespace BeachTennis.Game.Training
             _runner.Scheduler.Register(_player);
 
             ballView.Bind(_ball, _runner.Clock);
+            _camera = new GameObject("CameraDirector").AddComponent<CameraDirector>();
+            _camera.Bind(_player, _ball, _court, _runner.Clock);
             playerView.Bind(_player, _runner.Clock, _ball);
             BuildUi();
             _nextRallyTimer = 1f;
@@ -250,8 +253,11 @@ namespace BeachTennis.Game.Training
 
         // ---------------------------------------------------------------- events (after ticks)
 
+        private CameraDirector _camera;
+
         private void LateUpdate()
         {
+            _camera.Show(_player.IsServing ? CameraShot.Serve : CameraShot.Gameplay);
             var pe = _player.Events;
             for (int i = 0; i < pe.Count; i++)
             {

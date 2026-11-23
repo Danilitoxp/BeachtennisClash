@@ -5,6 +5,7 @@ using BeachTennis.Game.Config;
 using BeachTennis.Input;
 using BeachTennis.Presentation;
 using BeachTennis.Presentation.Ball;
+using BeachTennis.Presentation.Cameras;
 using BeachTennis.Presentation.Players;
 using BeachTennis.Simulation;
 using BeachTennis.Simulation.Ball;
@@ -27,7 +28,7 @@ namespace BeachTennis.Game.Match
     [DefaultExecutionOrder(-2000)]
     public sealed class MatchMode : MonoBehaviour
     {
-        private enum Screen { Menu, Playing, Finished }
+        private enum Screen { Menu, Playing, Paused, Finished }
 
         private struct MenuOption
         {
@@ -49,6 +50,8 @@ namespace BeachTennis.Game.Match
         [SerializeField] private PlayerView[] playerViews;
         [SerializeField] private CourtView courtView;
         [SerializeField] private TouchControls controls;
+        [Tooltip("Optional: created at runtime when left empty.")]
+        [SerializeField] private CameraDirector cameraDirector;
         [SerializeField] private float pointPause = 2.2f;
         [SerializeField] private EventCategory category = EventCategory.Women;
         [SerializeField] private string trainingScene = "Training";
@@ -92,12 +95,17 @@ namespace BeachTennis.Game.Match
         private RectTransform _menu;
         private MenuOption[] _options;
         private RectTransform _result;
+        private RectTransform _pauseButton;
+        private RectTransform _pauseMenu;
+        private RectTransform _resumeButton;
+        private RectTransform _quitButton;
         private Text _resultText;
         private readonly StringBuilder _sb = new StringBuilder(256);
 
         private void Start()
         {
             _runner = AppRoot.Instance.Simulation;
+            if (cameraDirector == null) cameraDirector = new GameObject("CameraDirector").AddComponent<CameraDirector>();
             BuildUi();
             foreach (var v in playerViews) v.gameObject.SetActive(false);
             ShowMenu();
@@ -189,6 +197,7 @@ namespace BeachTennis.Game.Match
             _runner.Scheduler.Register(_referee);
 
             ballView.Bind(_ball, _runner.Clock);
+            cameraDirector.Bind(_players[Human], _ball, _court, _runner.Clock);
             for (int v = 0; v < playerViews.Length; v++)
             {
                 int simIndex = ViewToSimIndex(v, playersPerTeam);
@@ -239,15 +248,10 @@ namespace BeachTennis.Game.Match
             UpdateScoreboard();
         }
 
+        /// <summary>Serve shot while the human serves, gameplay otherwise (the director cuts on change of ends).</summary>
         private void PlaceCamera()
         {
-            var cam = Camera.main;
-            if (cam == null) return;
-            int side = _players[Human].State.Side;
-            // Closer than a TV camera: on a phone the ball must stay several pixels wide on the far side.
-            cam.fieldOfView = 55f;
-            cam.transform.position = new Vector3(0f, 6.2f, side * (_court.HalfLength + 6.0f));
-            cam.transform.LookAt(new Vector3(0f, 0f, -side * 2.5f));
+            cameraDirector.Show(_players[Human].IsServing ? CameraShot.Serve : CameraShot.Gameplay);
         }
 
         // ------------------------------------------------------------------ frame (before ticks)
@@ -258,6 +262,13 @@ namespace BeachTennis.Game.Match
             {
                 case Screen.Menu: HandleMenuInput(); return;
                 case Screen.Finished: if (TappedAnywhere()) ShowMenu(); return;
+                case Screen.Paused: HandlePauseInput(); return;
+            }
+
+            if (PauseRequested())
+            {
+                SetPaused(true);
+                return;
             }
 
             _ball.Config = physics.Config;
@@ -320,6 +331,8 @@ namespace BeachTennis.Game.Match
         private void LateUpdate()
         {
             if (_screen != Screen.Playing) return;
+            // Serve struck: back to the gameplay framing.
+            if (cameraDirector.Shot == CameraShot.Serve && !_players[Human].IsServing) cameraDirector.Show(CameraShot.Gameplay);
             UpdateCallOut();
             UpdateTrajectoryAid();
 
@@ -376,6 +389,7 @@ namespace BeachTennis.Game.Match
         /// <summary>Winners celebrate, losers lament (authored clips) at the end of each game.</summary>
         private void PlayReactions(int winningTeam)
         {
+            cameraDirector.Show(CameraShot.CloseUp); // PreparePoint returns to gameplay/serve
             for (int v = 0; v < playerViews.Length; v++)
             {
                 int sim = ViewToSimIndex(v, _score.PlayersPerTeam);
@@ -442,8 +456,56 @@ namespace BeachTennis.Game.Match
 
         // ------------------------------------------------------------------ menu
 
+        // ------------------------------------------------------------------ pause
+
+        /// <summary>Mobile: leaving the app (call, notification, home) pauses the match.</summary>
+        private void OnApplicationPause(bool paused)
+        {
+            if (paused && _screen == Screen.Playing) SetPaused(true);
+        }
+
+        private bool PauseRequested()
+        {
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            if (kb != null && kb.escapeKey.wasPressedThisFrame) return true; // Android back
+            foreach (Touch t in Touch.activeTouches)
+                if (t.phase == TouchPhase.Ended && RectTransformUtility.RectangleContainsScreenPoint(_pauseButton, t.screenPosition, null))
+                    return true;
+            return false;
+        }
+
+        private void HandlePauseInput()
+        {
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            if (kb != null && kb.escapeKey.wasPressedThisFrame) { SetPaused(false); return; }
+            foreach (Touch t in Touch.activeTouches)
+            {
+                if (t.phase != TouchPhase.Ended) continue;
+                if (RectTransformUtility.RectangleContainsScreenPoint(_resumeButton, t.screenPosition, null)) { SetPaused(false); return; }
+                if (RectTransformUtility.RectangleContainsScreenPoint(_quitButton, t.screenPosition, null))
+                {
+                    SetPaused(false);
+                    ShowMenu();
+                    return;
+                }
+            }
+        }
+
+        /// <summary>Freezes simulation, animation and timers; the touch controls are hidden meanwhile.</summary>
+        private void SetPaused(bool paused)
+        {
+            _screen = paused ? Screen.Paused : Screen.Playing;
+            _runner.Paused = paused;
+            Time.timeScale = paused ? 0f : 1f;
+            _pauseMenu.gameObject.SetActive(paused);
+            _pauseButton.gameObject.SetActive(!paused);
+            controls.gameObject.SetActive(!paused);
+        }
+
         private void ShowMenu()
         {
+            _runner.Paused = false;
+            Time.timeScale = 1f;
             TearDown();
             _screen = Screen.Menu;
             _menu.gameObject.SetActive(true);
@@ -636,6 +698,29 @@ namespace BeachTennis.Game.Match
             _result = UiBuilder.Canvas("[MatchResult]", 90);
             _resultText = UiBuilder.Panel(_result, new Vector2(0.5f, 0.5f), Vector2.zero, 56, TextAnchor.MiddleCenter, out _, 0.8f);
             _result.gameObject.SetActive(false);
+
+            // Pause button (top-right, inside the safe area) and pause menu.
+            _pauseButton = UiBuilder.Button(_hud, "II", Vector2.zero, new Vector2(110f, 110f), 48);
+            _pauseButton.anchorMin = _pauseButton.anchorMax = _pauseButton.pivot = new Vector2(1f, 1f);
+            Rect sa = UnityEngine.Screen.safeArea;
+            float scale = UnityEngine.Screen.height / UiBuilder.RefHeight;
+            _pauseButton.anchoredPosition = new Vector2(-20f - (UnityEngine.Screen.width - sa.xMax) / scale, -20f - (UnityEngine.Screen.height - sa.yMax) / scale);
+
+            _pauseMenu = UiBuilder.Canvas("[PauseMenu]", 95);
+            var dim = new GameObject("Dim", typeof(RectTransform), typeof(Image)).GetComponent<RectTransform>();
+            dim.SetParent(_pauseMenu, false);
+            dim.anchorMin = Vector2.zero;
+            dim.anchorMax = Vector2.one;
+            dim.offsetMin = dim.offsetMax = Vector2.zero;
+            dim.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.6f);
+            dim.GetComponent<Image>().raycastTarget = false;
+            var pauseTitle = UiBuilder.Text(_pauseMenu, 64, TextAnchor.MiddleCenter);
+            pauseTitle.rectTransform.anchorMin = pauseTitle.rectTransform.anchorMax = new Vector2(0.5f, 0.72f);
+            pauseTitle.rectTransform.sizeDelta = new Vector2(900f, 100f);
+            pauseTitle.text = "PAUSA";
+            _resumeButton = UiBuilder.Button(_pauseMenu, "Continuar", new Vector2(0f, 40f), new Vector2(700f, 110f), 40);
+            _quitButton = UiBuilder.Button(_pauseMenu, "Sair para o menu", new Vector2(0f, -110f), new Vector2(700f, 110f), 40);
+            _pauseMenu.gameObject.SetActive(false);
         }
     }
 }
