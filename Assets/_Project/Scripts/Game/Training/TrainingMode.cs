@@ -5,6 +5,7 @@ using BeachTennis.Input;
 using BeachTennis.Presentation;
 using BeachTennis.Presentation.Ball;
 using BeachTennis.Presentation.Cameras;
+using BeachTennis.Presentation.Environment;
 using BeachTennis.Presentation.Players;
 using BeachTennis.Simulation;
 using BeachTennis.Simulation.Ball;
@@ -101,6 +102,8 @@ namespace BeachTennis.Game.Training
 
             ballView.Bind(_ball, _runner.Clock);
             _camera = new GameObject("CameraDirector").AddComponent<CameraDirector>();
+            new GameObject("Environment Director").AddComponent<EnvironmentDirector>().Apply((TimeOfDay)GameSettings.TimeOfDay);
+            _sandFx = new GameObject("SandFx").AddComponent<SandFx>();
             _camera.Bind(_player, _ball, _court, _runner.Clock);
             playerView.Bind(_player, _runner.Clock, _ball);
             BuildUi();
@@ -255,6 +258,7 @@ namespace BeachTennis.Game.Training
         // ---------------------------------------------------------------- events (after ticks)
 
         private CameraDirector _camera;
+        private SandFx _sandFx;
 
         private void LateUpdate()
         {
@@ -298,7 +302,11 @@ namespace BeachTennis.Game.Training
             for (int i = 0; i < be.Count; i++)
             {
                 ref readonly BallEvent e = ref be[i];
-                if (e.Type == BallEventType.SandContact) markers.Mark(e.Position.ToUnity(), _court);
+                if (e.Type == BallEventType.SandContact)
+                {
+                    markers.Mark(e.Position.ToUnity(), _court);
+                    _sandFx.Burst(e.Position.ToUnity(), e.Velocity.Magnitude / 20f);
+                }
                 if (!_rallyLive) continue;
 
                 switch (e.Type)

@@ -15,6 +15,14 @@ namespace BeachTennis.Game
         private const string KeyQuality = "bt.quality";
         private const string KeyHighFps = "bt.highFps";
         private const string KeyCategory = "bt.category";
+        private const string KeyTimeOfDay = "bt.timeOfDay";
+
+        /// <summary>0 = day, 1 = sunset, 2 = night (Presentation.Environment.TimeOfDay).</summary>
+        public static int TimeOfDay
+        {
+            get => Mathf.Clamp(PlayerPrefs.GetInt(KeyTimeOfDay, 0), 0, 2);
+            set { PlayerPrefs.SetInt(KeyTimeOfDay, value); PlayerPrefs.Save(); }
+        }
 
         public static Difficulty Difficulty
         {

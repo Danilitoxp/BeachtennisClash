@@ -276,6 +276,9 @@ namespace BeachTennis.EditorTools
             camGo.transform.position = new Vector3(0f, MatchCameraHeight, -court.HalfLength - MatchCameraBack);
             camGo.transform.LookAt(new Vector3(0f, 0f, MatchCameraLookAhead));
             camGo.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+            // Phase 7a environment (sand material, sea, palms) when its assets exist.
+            if (AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/Environment/Materials/Sand.mat") != null)
+                EnvironmentSetup.Decorate();
             return courtView;
         }
 

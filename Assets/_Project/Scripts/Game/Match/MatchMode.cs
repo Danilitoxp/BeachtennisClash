@@ -6,6 +6,7 @@ using BeachTennis.Input;
 using BeachTennis.Presentation;
 using BeachTennis.Presentation.Ball;
 using BeachTennis.Presentation.Cameras;
+using BeachTennis.Presentation.Environment;
 using BeachTennis.Presentation.Players;
 using BeachTennis.Simulation;
 using BeachTennis.Simulation.Ball;
@@ -78,6 +79,8 @@ namespace BeachTennis.Game.Match
         private Text _feedbackText;
         private float _feedbackTimer;
         private MainMenuView _menuView;
+        private EnvironmentDirector _environment;
+        private SandFx _sandFx;
         private RectTransform _result;
         private RectTransform _pauseButton;
         private RectTransform _pauseMenu;
@@ -91,7 +94,11 @@ namespace BeachTennis.Game.Match
             _runner = AppRoot.Instance.Simulation;
             if (cameraDirector == null) cameraDirector = new GameObject("CameraDirector").AddComponent<CameraDirector>();
             BuildUi();
+            _environment = new GameObject("Environment Director").AddComponent<EnvironmentDirector>();
+            _sandFx = new GameObject("SandFx").AddComponent<SandFx>();
+            _environment.Apply((TimeOfDay)GameSettings.TimeOfDay);
             _menuView = gameObject.AddComponent<MainMenuView>();
+            _menuView.VisualsChanged += () => _environment.Apply((TimeOfDay)GameSettings.TimeOfDay);
             _menuView.PlayRequested += StartMatch;
             _menuView.TrainingRequested += () => SceneManager.LoadScene(trainingScene);
             foreach (var v in playerViews) v.gameObject.SetActive(false);
@@ -333,13 +340,18 @@ namespace BeachTennis.Game.Match
                     if (e.Type == PlayerEventType.SwingStarted) ViewFor(k)?.PlaySwing(false);
                     if (e.Type == PlayerEventType.Hit) ViewFor(k)?.PlayContact(e);
                     if (k == Human && e.Type == PlayerEventType.Hit) ShowFeedback(GradeText(e), GradeColor(e.Grade));
+                    if (e.Type == PlayerEventType.Hit && e.Dive) _sandFx.Burst(_players[k].State.Position.ToUnity(), 1f);
                 }
                 events.Clear();
             }
 
             BallEventBuffer be = _ball.Events;
             for (int i = 0; i < be.Count; i++)
-                if (be[i].Type == BallEventType.SandContact) markers.Mark(be[i].Position.ToUnity(), _court);
+                if (be[i].Type == BallEventType.SandContact)
+                {
+                    markers.Mark(be[i].Position.ToUnity(), _court);
+                    _sandFx.Burst(be[i].Position.ToUnity(), be[i].Velocity.Magnitude / 20f);
+                }
             be.Clear();
         }
 

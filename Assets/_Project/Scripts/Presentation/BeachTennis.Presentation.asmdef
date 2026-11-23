@@ -6,7 +6,9 @@
         "BeachTennis.Simulation",
         "Unity.InputSystem",
         "UnityEngine.UI",
-        "Unity.Cinemachine"
+        "Unity.Cinemachine",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

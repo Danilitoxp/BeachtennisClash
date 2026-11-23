@@ -15,6 +15,8 @@ namespace BeachTennis.Game.Match
     {
         public event Action<int, bool> PlayRequested;   // players per team, official format
         public event Action TrainingRequested;
+        /// <summary>Raised when an option that changes the scene look (time of day, quality) changes.</summary>
+        public event Action VisualsChanged;
 
         private static readonly Color Panel = new Color(0.05f, 0.08f, 0.12f, 0.82f);
         private static readonly Color ButtonColor = new Color(1f, 1f, 1f, 0.12f);
@@ -23,7 +25,8 @@ namespace BeachTennis.Game.Match
         private UIDocument _document;
         private VisualElement _main, _options;
         private Label _summary;
-        private Button _difficulty, _aid, _quality, _fps, _category;
+        private Button _difficulty, _aid, _quality, _fps, _category, _time;
+        private static readonly string[] TimeNames = { "Dia", "Pôr do sol", "Noite" };
 
         private static readonly string[] QualityNames = { "Baixa", "Média", "Alta", "Ultra" };
 
@@ -76,7 +79,8 @@ namespace BeachTennis.Game.Match
             _options = Card();
             _difficulty = OptionRow("Dificuldade", () => { GameSettings.Difficulty = (Difficulty)(((int)GameSettings.Difficulty + 1) % 4); Refresh(); });
             _aid = OptionRow("Linha da trajetória", () => { GameSettings.TrajectoryAid = !GameSettings.TrajectoryAid; Refresh(); });
-            _quality = OptionRow("Qualidade gráfica", () => { GameSettings.Quality = (CurrentQuality() + 1) % QualitySettings.count; Refresh(); });
+            _time = OptionRow("Horário", () => { GameSettings.TimeOfDay = (GameSettings.TimeOfDay + 1) % 3; Refresh(); VisualsChanged?.Invoke(); });
+            _quality = OptionRow("Qualidade gráfica", () => { GameSettings.Quality = (CurrentQuality() + 1) % QualitySettings.count; Refresh(); VisualsChanged?.Invoke(); });
             _fps = OptionRow("Taxa de quadros", () => { GameSettings.HighFrameRate = !GameSettings.HighFrameRate; Refresh(); });
             _category = OptionRow("Categoria", () => { GameSettings.Category = GameSettings.Category == EventCategory.Men ? EventCategory.Women : EventCategory.Men; Refresh(); });
             _options.Add(MenuButton("Voltar", ShowMain, primary: true));
@@ -156,6 +160,7 @@ namespace BeachTennis.Game.Match
             if (_difficulty == null) return;
             _difficulty.text = AiProfile.For(GameSettings.Difficulty).Name;
             _aid.text = GameSettings.TrajectoryAid ? "Ligada" : "Desligada";
+            _time.text = TimeNames[GameSettings.TimeOfDay];
             int q = CurrentQuality();
             _quality.text = q < QualityNames.Length ? QualityNames[q] : QualitySettings.names[q];
             _fps.text = GameSettings.HighFrameRate
